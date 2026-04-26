@@ -8,7 +8,7 @@ import os
 import json
 from dotenv import load_dotenv
 
-from services.ollama_service import extract_skills_from_text, generate_guidance_narrative
+from services.ollama_service import extract_skills_from_text, generate_guidance_narrative, get_ai_job_matches
 from services.recommendation_service import get_job_matches, get_suggested_courses, get_all_courses
 from utils.skill_cleaner import clean_skills
 
@@ -130,10 +130,10 @@ def generate_user_guidance():
         structured_skills = quals.get('all_skills', [])
         if structured_skills:
             cleaned_skills = clean_skills(", ".join(structured_skills))
-            # Even with structured skills, we use Ollama to generate a narrative summary
+            print(f"DEBUG: Using structured skills for analysis: {cleaned_skills}")
             return perform_analysis_from_skills(cleaned_skills, user.full_name)
-    except:
-        pass
+    except Exception as e:
+        print(f"DEBUG: Failed to parse structured skills: {e}")
         
     formatted_text = format_qualifications_for_ai(user.qualifications)
     return perform_analysis(formatted_text, user.full_name)
@@ -159,30 +159,40 @@ def analyze_profile():
     return perform_analysis(data['text'])
 
 def perform_analysis(text, user_name=None):
-    # Extract skills using Ollama
     raw_skills = extract_skills_from_text(text)
-    
-    # If extraction fails, we return a friendly AI response instead of a 400 error
     if not raw_skills:
         return jsonify({
             "extracted_skills": [],
             "recommended_roles": [],
             "suggested_courses": [],
-            "narrative": "I couldn't quite identify specific technical skills from your message. Could you please provide more details about your background, tools you've used, or certifications you've earned?"
+            "narrative": "I couldn't quite identify specific technical skills. Could you please provide more details?"
         }), 200
     
     cleaned_user_skills = clean_skills(raw_skills)
     return perform_analysis_from_skills(cleaned_user_skills, user_name)
 
 def perform_analysis_from_skills(skills_list, user_name=None):
-    job_matches = get_job_matches(skills_list)
+    print(f"DEBUG: Starting LIGHTWEIGHT AI Job Match...")
+    
+    # 1. Use AI to match jobs
+    job_matches = get_ai_job_matches(skills_list)
+    
+    # 2. Fallback check
+    if not job_matches:
+        print("DEBUG: AI Matching failed. Falling back to deterministic logic.")
+        job_matches = get_job_matches(skills_list)
+    else:
+        print(f"DEBUG: AI Matching successful! Found {len(job_matches)} roles.")
+
+    # 3. Consolidate gaps and get courses
     top_gaps = []
     if job_matches:
         for match in job_matches[:2]:
-            top_gaps.extend(match['skill_gaps'])
+            top_gaps.extend(match.get('skill_gaps', []))
     suggested_courses = get_suggested_courses(top_gaps)
 
-    # Generate a personalized narrative using Ollama
+    # 4. Generate narrative
+    print("DEBUG: Generating AI Narrative...")
     narrative = generate_guidance_narrative(skills_list, job_matches)
     if user_name:
         narrative = f"Hello {user_name}! {narrative}"
@@ -200,7 +210,7 @@ def match_jobs():
     if not data or 'skills' not in data:
         return jsonify({"error": "Missing 'skills' in request body"}), 400
     user_skills = clean_skills(data['skills'])
-    job_matches = get_job_matches(user_skills)
+    job_matches = get_ai_job_matches(user_skills) or get_job_matches(user_skills)
     return jsonify(job_matches), 200
 
 @app.route('/api/courses', methods=['GET'])
