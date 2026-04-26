@@ -19,14 +19,19 @@ def extract_skills_from_text(profile_text):
 
 def get_ai_job_matches(skills_list):
     """
-    ROBUST VERSION: Handles AI formatting variations and multi-line responses.
+    INTELLIGENT VERSION: Forces the AI to suggest NEW skills as gaps.
     """
     skills_str = ", ".join(skills_list)
+    user_skills_lower = set(s.lower().strip() for s in skills_list)
     
     prompt = f"""
-    Analyze these skills: {skills_str}
-    Suggest the top 2 job roles. Format exactly like this for each:
-    ROLE: [Title] | MATCH: [Percentage] | MATCHED: [Skills] | GAPS: [Skills]
+    User Skills: {skills_str}
+    
+    Task: Suggest the top 2 job roles. 
+    For GAPS, identify NEW technologies or tools NOT in the user's list that are essential for the role.
+    
+    Format exactly like this for each:
+    ROLE: [Title] | MATCH: [Percentage] | MATCHED: [Skills from user list] | GAPS: [NEW skills to learn]
     """
 
     payload = {
@@ -34,36 +39,29 @@ def get_ai_job_matches(skills_list):
         "prompt": prompt,
         "stream": False,
         "options": {
-            "temperature": 0.1,
-            "num_predict": 300 
+            "temperature": 0.3, # Slightly higher temperature for better "brainstorming"
+            "num_predict": 400 
         }
     }
 
     try:
-        print("DEBUG: Sending AI request...")
+        print("DEBUG: Sending Intelligent AI request...")
         response = requests.post(OLLAMA_URL, json=payload, timeout=300)
         response.raise_for_status()
         raw_text = response.json().get("response", "").strip()
-        print(f"DEBUG: AI responded. Parsing results...")
+        print(f"DEBUG: AI Response received.")
 
-        # 1. Clean up multi-line formatting (combine wrapped lines)
         clean_text = raw_text.replace("\n", " ").replace("  ", " ")
-        
-        # 2. Find all "ROLE:" blocks
         results = []
-        # Split by "ROLE:" but keep the delimiter
         blocks = re.split(r"(?=ROLE:)", clean_text, flags=re.I)
         
         for block in blocks:
             if "ROLE:" not in block.upper(): continue
             
             try:
-                # Use flexible regex that doesn't strictly require brackets
                 role_match = re.search(r"ROLE:\s*(.*?)\s*\|", block, re.I)
                 perc_match = re.search(r"MATCH:\s*(\d+)", block, re.I)
                 
-                # Extract skills by looking between delimiters
-                # We handle both "MATCHED: [a, b]" and "MATCHED: a, b"
                 matched_str = ""
                 gaps_str = ""
                 
@@ -73,15 +71,19 @@ def get_ai_job_matches(skills_list):
                 
                 g_search = re.search(r"GAPS:\s*(.*)", block, re.I)
                 if g_search:
-                    # Clean up the end of the string (remove AI notes)
                     gaps_str = g_search.group(1).split("Note:")[0].split(".")[0].replace("[", "").replace("]", "")
 
                 if role_match and perc_match:
+                    raw_gaps = [s.strip() for s in gaps_str.split(",") if s.strip()]
+                    
+                    # Ensure gaps are truly new (double-check filter)
+                    filtered_gaps = [g for g in raw_gaps if g.lower() not in user_skills_lower]
+
                     results.append({
                         "role": role_match.group(1).strip(),
                         "match_percentage": int(perc_match.group(1)),
                         "matched_skills": [s.strip() for s in matched_str.split(",") if s.strip()],
-                        "skill_gaps": [s.strip() for s in gaps_str.split(",") if s.strip()]
+                        "skill_gaps": filtered_gaps
                     })
             except Exception as e:
                 print(f"DEBUG: Parsing block error: {e}")
@@ -99,11 +101,11 @@ def generate_guidance_narrative(skills, roles):
     roles_str = ", ".join([r.get('role', 'Unknown') for r in (roles or [])[:2]])
     skills_str = ", ".join(skills)
 
-    prompt = f"As a career coach, write 2 sentences for a user with these skills: {skills_str} and matches: {roles_str}."
-    payload = {"model": "mistral", "prompt": prompt, "stream": False, "options": {"num_predict": 100}}
+    prompt = f"As a career coach, write 2-3 sentences for a user with these skills: {skills_str} and matches: {roles_str}. Be specific and encouraging."
+    payload = {"model": "mistral", "prompt": prompt, "stream": False, "options": {"num_predict": 150}}
 
     try:
         response = requests.post(OLLAMA_URL, json=payload, timeout=120)
         return response.json().get("response", "").strip()
     except:
-        return "Keep going! You're on the right track."
+        return "You have a great start! Bridge these gaps to become a top-tier professional."
