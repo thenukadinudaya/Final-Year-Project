@@ -74,17 +74,20 @@ export default function LoginForm({ onSwitch }) {
 
         <Button type="submit" text={loading ? "Logging in..." : "Login"} disabled={loading} />
 
-        <div className="flex justify-between mt-4 text-sm">
-          <button type="button" className="text-blue-600">
+        <div className="flex justify-between items-center mt-6 text-sm">
+          <button type="button" className="text-blue-600 hover:text-blue-800 transition-colors">
             Forgot password?
           </button>
-          <button
-            type="button"
-            onClick={onSwitch}
-            className="text-blue-600"
-          >
-            Register
-          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-600">New here?</span>
+            <button
+              type="button"
+              onClick={onSwitch}
+              className="bg-blue-50 text-blue-600 font-semibold py-2 px-4 rounded-lg hover:bg-blue-100 hover:text-blue-700 transition-all border border-blue-200 shadow-sm"
+            >
+              Create Account
+            </button>
+          </div>
         </div>
       </form>
     </>
