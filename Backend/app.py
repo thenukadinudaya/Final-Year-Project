@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 from services.ollama_service import extract_skills_from_text, generate_guidance_narrative, get_ai_job_matches
 from services.recommendation_service import get_job_matches, get_suggested_courses, get_all_courses
 from utils.skill_cleaner import clean_skills
+from utils.email_service import send_verification_email
+import secrets
 
 # Load environment variables
 load_dotenv()
@@ -39,6 +41,8 @@ class User(db.Model):
     age = db.Column(db.Integer)
     gender = db.Column(db.String(20))
     qualifications = db.Column(db.Text)
+    is_verified = db.Column(db.Boolean, default=False)
+    verification_token = db.Column(db.String(100), nullable=True)
 
     def set_password(self, password):
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -53,7 +57,8 @@ class User(db.Model):
             "full_name": self.full_name,
             "age": self.age,
             "gender": self.gender,
-            "qualifications": self.qualifications
+            "qualifications": self.qualifications,
+            "is_verified": self.is_verified
         }
 
 # --- Routes ---
@@ -70,21 +75,38 @@ def register():
     if quals and not isinstance(quals, str):
         quals = json.dumps(quals)
 
+    # Generate Verification Token
+    verification_token = secrets.token_urlsafe(32)
+
     new_user = User(
         email=data['email'],
         full_name=data.get('fullName') or data.get('full_name'),
         age=data.get('age'),
         gender=data.get('gender'),
-        qualifications=quals
+        qualifications=quals,
+        is_verified=False,
+        verification_token=verification_token
     )
     new_user.set_password(data['password'])
     db.session.add(new_user)
     db.session.commit()
 
-    access_token = create_access_token(identity=str(new_user.id))
-    user_data = new_user.to_dict()
-    user_data['access_token'] = access_token
-    return jsonify({"message": "User registered successfully", "user": user_data}), 201
+    # Send Ethereal Email
+    send_verification_email(new_user.email, new_user.full_name, verification_token)
+
+    return jsonify({"message": "Registration successful. Please check your email to verify your account."}), 201
+
+@app.route('/api/auth/verify-email/<token>', methods=['GET'])
+def verify_email(token):
+    user = User.query.filter_by(verification_token=token).first()
+    if not user:
+        return jsonify({"message": "Invalid or expired verification link"}), 400
+    
+    user.is_verified = True
+    user.verification_token = None
+    db.session.commit()
+    
+    return jsonify({"message": "Email verified successfully. You can now log in."}), 200
 
 @app.route('/api/auth/login', methods=['POST'])
 def login():
@@ -93,6 +115,9 @@ def login():
         return jsonify({"message": "Email and password required"}), 400
     user = User.query.filter_by(email=data['email']).first()
     if user and user.check_password(data['password']):
+        if not user.is_verified:
+            return jsonify({"message": "Please verify your email address before logging in", "unverified": True}), 403
+            
         access_token = create_access_token(identity=str(user.id))
         user_data = user.to_dict()
         user_data['access_token'] = access_token
