@@ -63,7 +63,7 @@ def send_verification_email(to_email, user_name, token):
     msg.add_alternative(html_content, subtype='html')
 
     try:
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=5) as server:
             server.starttls()
             server.login(SMTP_USERNAME, SMTP_PASSWORD)
             server.send_message(msg)
