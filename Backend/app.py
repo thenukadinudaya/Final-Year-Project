@@ -84,18 +84,21 @@ def register():
         age=data.get('age'),
         gender=data.get('gender'),
         qualifications=quals,
-        is_verified=False,
+        is_verified=True,
         verification_token=verification_token
     )
     new_user.set_password(data['password'])
     db.session.add(new_user)
     db.session.commit()
 
-    # Send Ethereal Email
-    frontend_url = request.headers.get("Origin", "http://localhost:5173")
-    send_verification_email(new_user.email, new_user.full_name, verification_token, frontend_url)
+    # Email verification temporarily disabled for live site
+    # frontend_url = request.headers.get("Origin", "http://localhost:5173")
+    # send_verification_email(new_user.email, new_user.full_name, verification_token, frontend_url)
 
-    return jsonify({"message": "Registration successful. Please check your email to verify your account."}), 201
+    access_token = create_access_token(identity=str(new_user.id))
+    user_data = new_user.to_dict()
+    user_data['access_token'] = access_token
+    return jsonify({"message": "Registration successful", "user": user_data}), 201
 
 @app.route('/api/auth/verify-email/<token>', methods=['GET'])
 def verify_email(token):
