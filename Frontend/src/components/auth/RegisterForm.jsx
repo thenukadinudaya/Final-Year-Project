@@ -11,6 +11,7 @@ export default function RegisterForm({ onSwitch }) {
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   
   const [formData, setFormData] = useState({
     fullName: "",
@@ -42,19 +43,49 @@ export default function RegisterForm({ onSwitch }) {
     setLoading(true);
 
     try {
-      const response = await registerUser(formData);
+      await registerUser(formData);
       
-      // Store user in context
-      login(response.user);
-      
-      // Redirect to home
-      navigate("/");
+      // Show success screen instead of logging in
+      setRegistrationSuccess(true);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
+
+  if (registrationSuccess) {
+    return (
+      <div className="text-center py-8">
+        <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Check Your Email</h2>
+        <p className="text-gray-600 mb-8 max-w-sm mx-auto">
+          We've sent a verification link to <span className="font-semibold text-gray-800">{formData.email}</span>. 
+          Please check your Ethereal inbox to verify your account before logging in.
+        </p>
+        <div className="space-y-4">
+          <a 
+            href="https://ethereal.email/login" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="block w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 transition"
+          >
+            Open Ethereal Email
+          </a>
+          <button 
+            onClick={onSwitch}
+            className="block w-full text-blue-600 font-medium hover:text-blue-800 transition"
+          >
+            Back to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
