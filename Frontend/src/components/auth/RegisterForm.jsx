@@ -70,8 +70,8 @@ export default function RegisterForm({ onSwitch }) {
         <div className="space-y-4">
           <div className="bg-blue-50 border border-blue-200 p-3 rounded text-sm text-left mb-4">
             <p className="font-semibold text-blue-800 mb-1">Testing Credentials:</p>
-            <p className="text-gray-700"><strong>Email:</strong> lucile.murray53@ethereal.email</p>
-            <p className="text-gray-700"><strong>Password:</strong> F12qgJg8M1qR36aJz7</p>
+            <p className="text-gray-700"><strong>Email:</strong> li6l72x44ctnkfyk@ethereal.email</p>
+            <p className="text-gray-700"><strong>Password:</strong> yRAJ7EBP7AkhDfvf1j</p>
           </div>
           <a 
             href="https://ethereal.email/login" 

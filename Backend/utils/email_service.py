@@ -5,8 +5,8 @@ import os
 # Using Ethereal Email for development/testing
 SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.ethereal.email")
 SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
-SMTP_USERNAME = os.getenv("SMTP_USERNAME", "lucile.murray53@ethereal.email")
-SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "F12qgJg8M1qR36aJz7")
+SMTP_USERNAME = os.getenv("SMTP_USERNAME", "li6l72x44ctnkfyk@ethereal.email")
+SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "yRAJ7EBP7AkhDfvf1j")
 FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@careerguidance.com")
 
 def send_verification_email(to_email, user_name, token):
