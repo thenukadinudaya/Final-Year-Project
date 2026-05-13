@@ -9,12 +9,12 @@ SMTP_USERNAME = os.getenv("SMTP_USERNAME", "li6l72x44ctnkfyk@ethereal.email")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD", "yRAJ7EBP7AkhDfvf1j")
 FROM_EMAIL = os.getenv("FROM_EMAIL", "noreply@careerguidance.com")
 
-def send_verification_email(to_email, user_name, token):
+def send_verification_email(to_email, user_name, token, frontend_url="http://localhost:5173"):
     """
     Sends a verification email to the newly registered user.
     Uses Ethereal Email for safe development testing.
     """
-    verification_link = f"http://localhost:5173/verify-email/{token}"
+    verification_link = f"{frontend_url}/verify-email/{token}"
     
     msg = EmailMessage()
     msg['Subject'] = 'Please verify your email address'

@@ -92,7 +92,8 @@ def register():
     db.session.commit()
 
     # Send Ethereal Email
-    send_verification_email(new_user.email, new_user.full_name, verification_token)
+    frontend_url = request.headers.get("Origin", "http://localhost:5173")
+    send_verification_email(new_user.email, new_user.full_name, verification_token, frontend_url)
 
     return jsonify({"message": "Registration successful. Please check your email to verify your account."}), 201
 
