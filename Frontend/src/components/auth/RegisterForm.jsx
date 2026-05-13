@@ -68,11 +68,16 @@ export default function RegisterForm({ onSwitch }) {
           Please check your Ethereal inbox to verify your account before logging in.
         </p>
         <div className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 p-3 rounded text-sm text-left mb-4">
+            <p className="font-semibold text-blue-800 mb-1">Testing Credentials:</p>
+            <p className="text-gray-700"><strong>Email:</strong> lucile.murray53@ethereal.email</p>
+            <p className="text-gray-700"><strong>Password:</strong> F12qgJg8M1qR36aJz7</p>
+          </div>
           <a 
             href="https://ethereal.email/login" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="block w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 transition"
+            className="block w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded hover:bg-blue-700 transition text-center"
           >
             Open Ethereal Email
           </a>
